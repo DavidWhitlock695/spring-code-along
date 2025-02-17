@@ -1,0 +1,40 @@
+### Add new shopItem -
+POST http://localhost:8080/shop-inventory-2/addItem
+Content-Type: application/json
+
+{
+  "name": "Marshmallows",
+  "price": 1000,
+  "expiryDate": 987654432,
+  "section" : "sweets",
+  "batchID": 123456
+}
+
+### Modify shopItem -
+PUT http://localhost:8080/shop-inventory-2/updateItem
+Content-Type: application/json
+
+{
+  "itemID": 1,
+  "name": "Marshmallows",
+  "price": 1000,
+  "expiryDate": 987654432,
+  "section" : "confectionary",
+  "batchID": 123456
+}
+
+### Modify shopItem -
+PUT http://localhost:8080/shop-inventory-2/updateItem
+Content-Type: application/json
+
+{
+  "itemID": 2,
+  "name": "Marshmallows",
+  "price": 1000,
+  "expiryDate": 987654432,
+  "section" : "confectionary",
+  "batchID": 123456
+}
+
+### Delete shopItem
+DELETE http://localhost:8080/shop-inventory-2/deleteItem/1
