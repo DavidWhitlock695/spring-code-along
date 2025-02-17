@@ -1,0 +1,41 @@
+:root {
+  font-size: 16px;
+  font-family: Verdana, Geneva, Tahoma, sans-serif;
+  box-sizing: border-box;
+  --codeTermColour: #4447bf;
+}
+
+/* Elements */
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Classes */
+
+.pageWrapper {
+  display: flex;
+  max-width: 60rem;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.contentImage {
+  width: 50rem;
+}
+
+.contentImageSmaller {
+  width: 30rem;
+}
+
+.contentImageSmaller2 {
+  width: 20rem;
+}
+
+.codeTerm {
+  font-weight: 600;
+  color: var(--codeTermColour);
+}

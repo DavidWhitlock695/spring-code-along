@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="X-UA-Compatible" content="ie=edge" />
+    <title>Spring Boot Code-Along</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="pageWrapper">
+      <h1>Spring Boot Code-Along</h1>
+      <header>
+        <h2>Introduction</h2>
+        <p>
+          Maybe there's some magical mystery tour online with all the
+          documentation that I've just missed.
+        </p>
+        <p>Maybe there isn't...</p>
+        <p>
+          Regardless, I've found getting up to speed with Spring Boot about as
+          easy as dancing with a porpoise. Without further ado, this collection
+          of files works through a Spring-Boot project to record and assimilate
+          what I've learned along the way.
+        </p>
+        <h2>Aims</h2>
+        <ol>
+          <li>Create a RESTful API with Spring-Boot</li>
+          <li>
+            Implement a simple JPA repository to hold the data for the backend
+          </li>
+          <li>Implement the CRUD repository commands for the repository</li>
+          <li style="color: cadetblue">
+            Not written up [Connect the backend to a frontend based in React-TS]
+          </li>
+        </ol>
+        <h2>Project Details</h2>
+        <p>
+          Our website will be a shop's inventory. It's going to start super
+          basic!
+        </p>
+        <p>
+          The main collection is a set of
+          <span class="codeTerm">Items</span> which have the following
+          attributes:
+        </p>
+        <ul>
+          <li>Unique ID (Long)</li>
+          <li>Name (String)</li>
+          <li>
+            Price (Integer in pence - converted in the frontend to proper
+            currency)
+          </li>
+          <li>Batch ID (Long)</li>
+          <li>Expiry Date (Long, UTC in miliseconds)</li>
+          <li>
+            Shop Section (points to the ID of the Shop Section in another table
+            e.g. vegetable, fruit, dairy...)
+          </li>
+        </ul>
+        <p>
+          There is also a supporting table for
+          <span class="codeTerm">Shop Sections</span> which has:
+        </p>
+        <ul>
+          <li>Unique ID (long)</li>
+          <li>Name (String)</li>
+        </ul>
+        <img
+          class="contentImage"
+          src="images/data_schema.svg"
+          alt="data schema of shop items and their corresponding sections"
+        />
+      </header>
+      <main>
+        <h2>Setup and Requirements</h2>
+        <h3>Requirements</h3>
+        <ul>
+          <li>
+            Mac OS (or work on another machine, but translate OS-dependent
+            methods accordingly)
+          </li>
+          <li>Github Account and basic understanding</li>
+          <li>
+            IntelliJ IDEA integrated development environment (can choose
+            another, but with no guarantees it'll be the same experience!)
+          </li>
+          <li>Maven (dependency manager)</li>
+          <li>Vite (CLI tool for creating React-TS project templates)</li>
+        </ul>
+        <h3>Github Setup</h3>
+        <p>
+          It's always worth having a remote backup of your work even if working
+          alone. Create a new private repository with the name
+          "shop-inventory-2". I've personally always had issues with getting
+          <i>.gitignore</i> files to play ball in the way I want, but I added a
+          Maven .gitignore template during the creation process and then later
+          pasted some more .gitignore stuff from from a Google search for
+          React-TS work
+        </p>
+        <p>
+          With the Github Repo set up, clone this using the SSH link to a
+          desired location on you computer.
+        </p>
+        <h3>Spring Setup</h3>
+        <p>
+          Go to <a href="https://start.spring.io/">start-spring</a> where you
+          can automatically generated a basic project template for the backend.
+        </p>
+        <ul>
+          <li>Language = Java</li>
+          <li>Dependency Manager = Maven</li>
+          <li>
+            Spring Boot version = Default selected (should be a stable version,
+            we're using 3.4.2)
+          </li>
+          <li>Group = shop-inventory-2</li>
+          <li>Artifact = backend</li>
+          <li>Description = whatever you want</li>
+          <li>
+            Name and package name should automatically take your previous
+            entries into account
+          </li>
+          <li>Packaging = jar</li>
+          <li>Java version = 21</li>
+        </ul>
+        <p>
+          In your depenencies section on the right make sure the following are
+          selected from the search bar:
+        </p>
+        <ul>
+          <li>Spring Data JPA</li>
+          <li>Spring Web</li>
+          <li>H2 Database</li>
+        </ul>
+        <img class="contentImage" src="images/startSpringScreenShot.png" />
+        <p>
+          The Spring Web dependencies set up your project for a RESTful API
+          service, Spring Data JPA (Java Persistence Library) can be thought of
+          as a wrapper around a database so that we can continue writing pure
+          Java, and underneath our code is translated into the correct database
+          queries. The H2 database is the database we'll be using. It's an
+          in-memory databse, very small, very fast but note since it's in RAM it
+          won't persist, You'll lose all your data every time you re-start your
+          app.
+        </p>
+        <p>
+          Click Generate.<br />
+          Double click on the downloaded file to extract, and move to your
+          cloned repo. If you wish to commit, I would recommend just doing the
+          <span class="codeTerm">application.properties</span> file, plus any
+          java files you will create later.
+        </p>
+        <p>Your setup should look like this:</p>
+        <img
+          class="contentImage"
+          src="images/initialProjectBackendScreenShot.jpeg"
+          alt="Initial setup in IntelliJ when a new start.spring.io project is opened"
+        />
+        <p>To give a quick tour, here are the key bits to be aware of:</p>
+        <ul>
+          <li>
+            Your app's Java code will live in: src/main/java/[yourPackageName]/
+          </li>
+          <li>
+            When you run the BackendApplication file, this runs the whole Spring
+            Boot application - you can prove it works by running it and going to
+            your local host at port 8080. It should give you a Whitelabel Error
+            Message which means it's on, but nothing has been provided for
+            display.
+          </li>
+          <li>
+            The resources folder can be used for HTML and even static SQL files
+            on startup. I haven't worked out how to get much of this working,
+            but if you had such data it could go here.
+          </li>
+          <li>
+            application.properties contains much of the background that Spring
+            Boot needs to run. It will currently just have
+            "spring.application.name=backend"
+          </li>
+          <li>Test folder - yes we will have to test... such is life :D</li>
+          <li>
+            pom.xml - Maven's tracker for all dependencies. We may need to play
+            with this later. If a dependency needs refreshing, go to the little
+            Maven "m" in the IDE in the top right and click "reload all maven
+            projects as shown below. Things usually look red when there's an
+            error.
+          </li>
+        </ul>
+        <img
+          class="contentImage"
+          src="images/mavenReloadScreenShot.jpeg"
+          alt="Initial setup in IntelliJ when a new start.spring.io project is opened"
+        />
+        <h2>App model: Controller, Service, Repo</h2>
+        <p>
+          We will be using the Controller, Service, Repo structure in this
+          project.
+        </p>
+        <ul>
+          <li>
+            <span class="codeTerm">Controller</span> - Manages the REST
+            interface. Entry point for all HTTP requests.
+          </li>
+          <li>
+            <span class="codeTerm">Service</span> - Takes Controller signals and
+            interprets them incorporating your business logic.
+          </li>
+          <li>
+            <span class="codeTerm">Repository</span> - The Storage System (in
+            our case, it's actually a Java wrapper around the real database and
+            each table gets its repo)
+          </li>
+        </ul>
+        <p>
+          When an HTTP request comes in, our controller asks the service layer
+          for the response, the service layer asks the repository and providing
+          everything is set up correctly we'll get the right result! If a return
+          message is needed the controller sends this back to the client (e.g.
+          GET request). If it's a POST/PUT/DELETE request by default there's an
+          automatic "OK" message (e.g. 200 status) sent back to the client.
+        </p>
+        <img
+          src="images/controllerServiceRepo.svg"
+          alt="Diagram of controller, service and repository flow"
+          class="contentImage"
+        />
+        <h2>CRUD template for our API</h2>
+        <p>
+          During this code-along, we will need to implement a basic CRUD
+          repository set of API requests:
+        </p>
+        <ul>
+          <li>
+            <span class="codeTerm">Create</span> - The client will send a POST
+            request with JSON data in the body to add an Item to our shop
+          </li>
+          <li>
+            <span class="codeTerm">Read</span> - The client will send a GET
+            request either for all the items, or for specific filters for items.
+          </li>
+          <li>
+            <span class="codeTerm">Update</span> - The client will send a PUT
+            request with JSON data to update the details of an Item or Shop
+            Section
+          </li>
+          <li>
+            <span class="codeTerm">Delete</span> - The client will send a DELETE
+            request with the ID of the item to delete
+          </li>
+        </ul>
+        <h2>Folder Structure Setup</h2>
+        <p>
+          To start coding, create the following subfolders (called "packages" in
+          the IDE) in the existing folder where your
+          <span class="codeTerm">ShopInventoryApplication</span> file is.
+        </p>
+        <ul>
+          <li>
+            <span class="codeTerm">entity</span> - this will store the
+            definition of <span class="codeTerm">Shop Item</span> and
+            <span class="codeTerm">Shop Section</span>
+          </li>
+          <li>
+            <span class="codeTerm">repo</span> - this will contain your two
+            tables (items, sections)
+          </li>
+          <li>
+            <span class="codeTerm">transfer</span> - here we will create DTOs
+            and DAOs as required (more on these later)
+          </li>
+        </ul>
+        <img
+          src="images/folderStructureScreenShot.jpeg"
+          alt="Folder Structure of Project"
+          class="contentImageSmaller"
+        />
+        <p>
+          Note: for ease, we will refer to the folder containing the
+          "BackendApplication" file as our
+          <span class="codeTerm">"root folder"</span>.
+        </p>
+        <h2>Create the Layers</h2>
+        <p>
+          Tip: if you ever want to make a change to all three layers, start with
+          your repo and then work upwards! Otherwise, IntelliJ won't be able to
+          predict what you're doing making the process harder.
+        </p>
+        <p>In this case we are going to work upwards too:</p>
+        <i>Entities > Repos > Service > Controller</i>
+        <h3>Create the Entities</h3>
+        <p>
+          Inside the entity folder, create a class per entity as described
+          below:
+        </p>
+        <p>1. Shop Section entity</p>
+        <img
+          class="contentImageSmaller"
+          alt="Structure of Shop Section Entity code"
+          src="images/shopSectionEntityCode.jpeg"
+        />
+        <p>
+          Notice how we have labelled it as an Entity using the annotation. This
+          tells the persistance library we will be storing these in our
+          database. The <i>@Table</i> annotation along with a name and string
+          tells it the name of the table that contains this entity. The
+          <i>@Id</i> and <i>@GeneratedValue</i> tell the persistance library to
+          automatically manage the creation of a unique ID every time we save a
+          new item to the table. Note that when modifying an item we would want
+          to use the <i>same</i> ID of whatever table entry we're modifying. It
+          needs to be public. This is why we also provide a number of getters
+          and setters below for completeness as we may use these later. In
+          retrospect, we probably won't need the setID() method but let's leave
+          it there...
+        </p>
+        <p>
+          Lastly, notice that we provide two constructors: an empty constructor
+          (required) and a full constructor (so that we can make some of our own
+          instances of the class later on).
+        </p>
+        <p>
+          Ignore the red underlining of "shop-sections". This is just because
+          the IDE doesn't know about table names.
+        </p>
+        <p>
+          The IDE provides some useful information on the left hand side. Notice
+          how there's a little orange "a" on the left, and the field for the
+          unique ID has a small key on it. This is the IDE's way of telling us
+          that we've set these fields as columns in our table, and that the ID
+          is the primary key. In the next part on shop items, pay attention to
+          how thr IDE represents a JOIN between two entities. If you want to see
+          all of your database fields, you can do so by clicking on the little
+          "a" signs and it will open a "persistence view" in your window.
+        </p>
+        <p>2. Shop Item entity</p>
+        <img
+          src="images/shopItemEntityCode.jpeg"
+          alt="Structure of Shop Item Entity code"
+          class="contentImage"
+        />
+        <p>
+          ...plus please fill in the getters and setters for all the fields! (It
+          was a bit too long to fit in this screenshot.)
+        </p>
+        <p>
+          You will notice the creation of this follows the same template as the
+          other but with one added feature: the "@ManyToOne" join column
+          annotations tell the database to connect the section value of the
+          shop-item with the table we already described called "shop-sections".
+          Since we could have many items in the same section, we're classifying
+          it as a many-to-one relationship. Finally notice that the ShopSection
+          field for this class is not the ID of the shop section, but rather the
+          object of the shop section itself. This is the convention for JPA
+          repositories when referencing the entity key of another table.
+        </p>
+        <h3>Create the Repos</h3>
+        <p>
+          The repository is not the whole database (that's abstracted away from
+          us). Instead think of each repository as a table (defined through an
+          <span class="codeTerm">interface</span> in Java Spring-Boot). We have
+          two tables: a <span class="codeTerm">Shop Item Table</span> and
+          <span class="codeTerm">Shop Section Table</span>.
+        </p>
+        <p>
+          Note I will be explicity using the term "shop" item/section for these
+          variables because we want to be very specific. In the future, we could
+          extend our model with other items. Maybe there are some in a warehouse
+          in which case they would be warehouse-items. We could also have other
+          things in the shop like shop-locations, shop-aisles, shop-tills...
+        </p>
+        <h4>Firstly, let's create the Shop Section repo</h4>
+        <img
+          src="images/ShopSectionRepoScreenShot.jpeg"
+          alt="screen shot of interface for shop section repo"
+          class="contentImage"
+        />
+        <p>
+          That's it! The annotation for the repository informs the framework
+          that it represents a table and it extends the JPA repository. You may
+          see online some "extends CRUD repository" interfaces too. In our case,
+          we want the JPA which is already an extension of this CRUD layer.
+        </p>
+        <p>
+          It's worth noting the section in angular brackets:
+          <span class="codeTerm">ShopSection, Long</span>. If you hover over the
+          JPA repository it will say it expects "T, ID". These are generics
+          which are explained really well by this youtuber:<br /><a
+            href="https://www.youtube.com/watch?v=K1iu1kXkVoA"
+            >Java Generics Video</a
+          ><br />In essence, what the interface is saying is "I can take any
+          object of type <span class="codeTerm">T</span> which in this case is
+          our <span class="codeTerm">ShopSection</span> , but I also needs to
+          know what type the <span class="codeTerm">ID</span> type will be for
+          this class." In our case it's a <span class="codeTerm">Long</span>.
+        </p>
+        <p>
+          Shoutout to John: this youtuber is one of the best Java tutorial
+          providers online I've found so far!
+        </p>
+        <p>
+          Comment: if you search google for the explanation of the interface
+          name you'll get this:
+        </p>
+        <a
+          href="https://docs.spring.io/spring-data/jpa/docs/current/api/org/springframework/data/jpa/repository/JpaRepository.html"
+          >JpaRepository Documentation</a
+        >
+        <p>
+          Perhaps hardened Java coders read this page like Rapunzel, but when
+          learning the ropes....?!
+        </p>
+        <h4>Now the repo for Shop Items:</h4>
+        <img
+          src="images/ShopItemRepoScreenShot.jpeg"
+          alt="screen shot of shop item repository"
+          class="contentImage"
+        />
+        <p>
+          We're now sorted with basic repositories. On to the Service and
+          Controller!
+        </p>
+        <h3>Create the Service and Controller</h3>
+        <p>
+          In your root folder create the
+          <span class="codeTerm">Controller</span> and
+          <span class="codeTerm">Service</span> classes as follows:
+        </p>
+        <h4>Service Layer</h4>
+        <p>
+          The service contains our <span class="codeTerm">business logic</span>.
+        </p>
+        <p>
+          For example, when a user adds an item later on with a POST request,
+          the item may contain a new shop section or it may use a previously
+          defined shop section. One way to go about this would be to use the
+          Service layer to check if the section exists, and if not create one.
+          The opposite would be the case for deleting an item (if the section
+          was no longer in use, we'd delete it).
+        </p>
+        <p>
+          This is all purely optional remember! We could equally say that the
+          shop sections are set in stone and cannot change beyond certain
+          pre-defined values. The when creating a new item, the Service layer
+          would check that the shop section being used was valid, and if not
+          rejected the change.
+        </p>
+        <p>
+          To create the service layer, add the following code to your Service
+          class:
+        </p>
+        <img
+          src="images/serviceLayerScreenShot.jpeg"
+          alt="screen shot of service layer code"
+          class="contentImage"
+        />
+        <p>
+          It's worth considering what we've just written. We've annotated the
+          class as the service layer in the spring framework, and then told it
+          to keep track of two repositories (database tables): shop items and
+          shop sections
+        </p>
+        <p>What's "@Autowired" I hear you scream? Magic.</p>
+        <p>
+          In reality, it's to do with something called
+          <span class="codeTerm">dependency injection</span>. Java permits you
+          to annotate classes so that Spring Boot can recognise them (e.g.
+          @Service). It then goes inside and anything with "@Autowired" is
+          immediately "injected" with the things it needs... getters, setters
+          and even declaration in the initialisation of thr Service variable.
+          Compare this with how you would normally set a field for a class:
+        </p>
+        <ol>
+          <li>Declare the field</li>
+          <li>Set the field in the constructor</li>
+          <li>Define the methods for getters and setters</li>
+        </ol>
+        For a good explanation of how it would look if we injected in the
+        constructor, for example, see this video:<br />
+        <a href="https://www.youtube.com/watch?v=PzC2R3K7jA0"
+          >Spring Boot pt. 12: Dependency Injection and @Autowired explained</a
+        >
+        <h4>Create the Controller</h4>
+        <p>Add the following code to your controller class:</p>
+        <img
+          src="images/controllerLayerScreenShot.jpeg"
+          alt="screen shot of controller layer code"
+          class="contentImage"
+        />
+        <p>
+          You will notice it's virtually the same as the Service layer in
+          structure, but the annotation uses "Controller" and the injected class
+          is the Service Layer.
+        </p>
+        <p>
+          If you run the Application now, you will still get a "Whitelabel Error
+          Page". Why? We have defined out classes, but we haven't told any of
+          the layers what to return for any HTTP requests! When you go to Port
+          8080 on LocalHost you therefore have no data except the backup Error
+          message Spring Boot provides out of the box.
+        </p>
+        <h2>Create our basic Mappings</h2>
+        <p>
+          We will map specific HTTP requests to specific actions in our back end
+          program and return something.
+        </p>
+        <p>We will start with the simplest: the GET request.</p>
+        <h3>GET request: return the whole database</h3>
+        <p>Our aim is to map the following HTTP request:</p>
+        <p><i>http://localhost:8080/shop-inventory-2/</i></p>
+        <h4>1. Check if we need to define the method in the Repo</h4>
+        <p>
+          For methods later on this becomes more important. However, if you were
+          to search for all the methods supplied out-of-the-box by the JPA Repo
+          interface, you would find there's already a method called "findAll" so
+          we actually don't need to do any work on the Repo layer. Moving on!
+        </p>
+        <h4>2. Add the method to the Service layer</h4>
+        <p>Add the following code to your Service:</p>
+        <img
+          src="images/findAllMethodServiceScreenShot.jpeg"
+          alt="screen shot of findAll Method in Service layer"
+          class="contentImage"
+        />
+        <h4>3. Add the method to your Controller layer</h4>
+        <p>Add the following to your Controller layer</p>
+        <img
+          src="images/findAllMethodControllerScreenShot.jpeg"
+          alt="screen shot of findAll Method in Controller layer"
+          class="contentImage"
+        />
+        <p>
+          Notice how we add the annotation "GetMapping" to tell Spring Boot that
+          we're describing a function that responds to a GET request.
+          Furthermore, in the brackets we tell it exactly what the path is that
+          we're responding to (except the beginning bit for localhost which is
+          automatically configured as the root address).
+        </p>
+        <p>
+          Now re-run your application and you will probably still get an error.
+          That's because we used "Controller", but actually we should be using
+          the annotation "RestController" for this layer. Change it as shown
+          below, re-run the application and you should get a black page with an
+          empty array when you open
+          <i>http://localhost:8080/shop-inventory-2/</i>. Congratulations!
+          You've implemented a GET request! Since there's no data in the
+          database though, it's just an empty set of brackets.
+        </p>
+        <img
+          src="images/correctingControllerAnnotationRestful.jpeg"
+          alt="corrected annotation for Controller layer"
+          class="contentImage"
+        />
+        <p>Output in Chrome:</p>
+        <img
+          src="images/emptyDatabaseScreenShot.jpeg"
+          alt="output in chrome for empty database for get all items request"
+          class="contentImage"
+        />
+        <h4>Opening the H2 Console in Chrome</h4>
+        <p>
+          One neat tool for investigating what the H2 Database looks like is to
+          open it's graphical user interface called the "Console" in Chrome.
+        </p>
+        <p>
+          Go to the Application.Properties file, and add two lines as shown
+          below:
+        </p>
+        <img
+          src="images/applicationPropertiesForH2Console.jpeg"
+          alt="code for allowing the console"
+          class="contentImage"
+        />
+        <p>
+          Now open the following page:<a
+            href="http://localhost:8080/h2-console/"
+            >H2 Console</a
+          >
+        </p>
+        <p>
+          This will take you to the login page. Your settings shouldn't have ny
+          passwords, so just click connect:
+        </p>
+        <img
+          src="images/h2ConsoleLoginPage.jpeg"
+          alt="h2 Console login page"
+          class="contentImageSmaller"
+        />
+        <p>
+          When you connect, you'll see that you do indeed have two tables named
+          "shop-sections" and "shop-items" and on opening their details in the
+          side bar, they'll list all the fields we had provided. This is proof
+          that everything's working, yay!
+        </p>
+        <img
+          src="images/h2ConsoleTableSetup.jpeg"
+          alt="display of H2 Console side bar showing table names and fields"
+          class="contentImageSmaller2"
+        />
+        <h3>POST request: add item to database</h3>
+        <p>
+          It's a bit boring having an empty database, so it would be useful to
+          be able to add an Shop Item and its corresponding Shop Section. The
+          data for POST requests will be stored in the "body" of the request as
+          JSON. We're going to have to do this in three steps:
+        </p>
+        <ol>
+          <li>Make a Data Transfer Object (DTO)</li>
+          <li>
+            Create the necessary function in the Service and Controller layers
+          </li>
+          <li>Create and send a POST request in our IDE</li>
+        </ol>
+        <p></p>
+        <h4>1. Creating a DTO</h4>
+        <p>
+          While at the moment it wouldn't be essential for a DTO to be used, as
+          the project becomes more complex it will become useful. The idea is to
+          have one format for the POST requst (JSON), one format for the
+          repository (your Item/Section classes) and in between there's a DTO.
+        </p>
+        <p>
+          Sometimes we distinguish between incoming data DTOs and outgoing ones.
+          For example, the outgoing DTO may not contain database implementation
+          details such as which user of our system added the item, only what the
+          item is. The outgoing data may include a set of unique IDs but these
+          would not be provided by the user when POSTing a new item (as it's the
+          databse that handles the unique ID generation, not the client).
+        </p>
+        <p>
+          Create a new class called
+          <span class="codeTerm">NewItemDTO</span> inside your existing package
+          called "transfer" and write the following code, plus the getters and
+          setters for all fields (not shown):
+        </p>
+        <img
+          src="images/newItemDTOScreenShot.jpeg"
+          alt="code for new Item DTO for POST requests"
+          class="contentImage"
+        />
+        <p>
+          There's no extra logic or processing on creating the DTO because our
+          example is simple, but that's OK for now. Notice that the
+          <span class="codeTerm">section</span> field is a String, not the class
+          for <span class="codeTerm">ShopSection</span>.
+        </p>
+        <h4>
+          2. Adding the POST request functions to the Service and Controller
+        </h4>
+        <p>
+          In the Service, we'll add support for the POST request to add an Item
+          as shown below.
+        </p>
+        <p>
+          Before adding the Item to our repo, we need to check if the Shop
+          Section is new, or an existing Section. If it's new, we need to add
+          this first or there will be a JOIN error. Add the following private
+          method to your Service:
+        </p>
+        <img
+          src="images/countShopSectionsByNameError.jpeg"
+          alt="adding a count of shop sections with specific name with error"
+          class="contentImage"
+        />
+        <p>
+          Notice the error: it can't find a method for the repository of Shop
+          Section that matches "countShopSectionsByName". This is because while
+          some generic methods are "automatic", those with specific names
+          according to our project variables must be somehow setup in the repo
+          first. To do this, go to your shopSectionRepository class and add the
+          following code (it should auto-complete):
+        </p>
+        <img
+          src="images/countShopSectionsByNameRepoCode.jpeg"
+          alt="code for Shopm Section Repo showing how to add count by section name"
+          class="contentImage"
+        />
+        <p>
+          We can now use this method in our private Service layer method. Note
+          that the code below has also been refactored using some helpful tips
+          from IntelliJ!
+        </p>
+        <img
+          src="images/serviceLayerCountBySectionCode.jpeg"
+          alt="Final code for Service Layer count by section name"
+          class="contentImage"
+        />
+        <p>
+          Now we can continue and create the actual method that will add a new
+          Item in the Service Layer (apologies for the low zoom):
+        </p>
+        <img
+          src="images/saveShopItemServiceLayerError.jpeg"
+          alt="Error when adding save item method to Service layer"
+          class="contentImage"
+        />
+        <p>
+          So, to summarise this sction we have created two Service Layer
+          methods. Each method needs to be recognised in the Repository Layer
+          (since it's a custom method). Note the order of the process:
+        </p>
+        <ol>
+          <li>
+            Save a new <span class="codeTerm">ShopSection</span> in the Section
+            Repo if it's a new section name
+          </li>
+          <li>
+            Fetch this <span class="codeTerm">ShopSection</span> from the
+            database including its unique ID
+          </li>
+          <li>
+            Create a new <span class="codeTerm">ShopItem</span> with all the DTO
+            data BUT using the ShopSection object from the previous step
+          </li>
+          <li>
+            Save the new item using the automatically provided repository
+            interface method "save"
+          </li>
+        </ol>
+        <p>
+          Again, we have a red error in the previous photo. The repo doesn't
+          have a user-defined method yet for "findShopSectionByName". Let's add
+          this in the Shop Section Repo:
+        </p>
+        <img
+          src="images/getShopSectionByNameRepo.jpeg"
+          alt="code for Shop Section Repo includes method for finding shop section by name"
+          class="contentImage"
+        />
+        <p>
+          At this point you may well be asking "how on Earth is Spring Boot able
+          to work out how to implement the database method written in SQL simply
+          from our named methods? Honestly I don't know, but it's pretty clever
+          huh?
+        </p>
+        <p>
+          Our last bit of this section is to add to the Controller Layer. We've
+          done all the hard work of implementing the business logic in the
+          Service layer, so just add the following method to the Controller:
+        </p>
+        <img
+          src="images/controllerLayerNewItemMethodScreenShot.jpeg"
+          alt="code for adding new item in Controller layer"
+          class="contentImage"
+        />
+        <p>
+          Notice that Spring-Boot has its in-built way of converting your JSON
+          http request body directly to the
+          <span class="codeTerm">NewItemDTO</span>.
+        </p>
+        <h4>3. Running a POST request</h4>
+        <p>
+          Our code is ready to accept a POST request! However, how do we send
+          one over? POSTman is a common tool you can use, but I think one step
+          simpler is to use a ".http" file. Write the following code inside your
+          root source folder, and call it "requests.http":
+        </p>
+        <img
+          src="images/examplePostRequestAddItem.jpeg"
+          alt="HTTP POST request code for adding shop item to inventory"
+          class="contentImage"
+        />
+        <p>
+          See the little green "run" arrow on the left hand side? Re-start your
+          main application, then click this little arrow. If everything has been
+          set up correctly, you'll receive an OK status code (200) in your
+          service report. Just to explain where everything is, see the diagram
+          below:
+        </p>
+        <img
+          src="images/layoutControlsIntelliJBottom.jpeg"
+          alt="screen shot of layout in IntelliJ IDEA highlighting services and run sections"
+          class="contentImage"
+        />
+        <p>
+          If you've clicked the green arrow once, click it one more time. Now
+          open your
+          <a href="http://localhost:8080/shop-inventory-2/">localhost</a> and
+          clicking "prettyPrint" in Chrome to read the JSON better should give
+          you:
+        </p>
+        <img
+          src="images/prettyPrintOuputAfterPostRequest.jpeg"
+          alt="pretty print output after two POST requests"
+          class="contentImageSmaller"
+        />
+        <p>
+          And if you go to the H2 console, click on the ShopItems table (which
+          will auto-complete an SQL request) and then run. You'll get two
+          results! Notice how the database automatically generated our two
+          unique IDs even though the rest of the data was identical.
+        </p>
+        <img
+          src="images/h2ConsoleAfterTwoPostRequests.jpeg"
+          alt="H2 Console output after two POST requests"
+          class="contentImageSmaller"
+        />
+        <p>
+          Now run the command in the same way, but for the "shop-sections"
+          table:
+        </p>
+        <img
+          src="images/h2ConsoleAfterTwoPostRequestsSectionsTable.jpeg"
+          alt="H2 console output after two POST requests (sections table)"
+          class="contentImageSmaller"
+        />
+        <p>
+          It hasn't done anything weird, like create two identical Shop Section
+          names which means our Service Layer Logic seems to be working.
+        </p>
+        <p>Recap:</p>
+        <ol>
+          <li>
+            We created some service layer logic to check if our new Item data
+            used a new shop section or not and added a Shop Section as required
+          </li>
+          <li>We saved a new Item to the repository using this shop section</li>
+          <li>We add the adItem method to the Controller</li>
+          <li>We created a POST request in a ".http" file</li>
+          <li>
+            We inspected the output in our "Services" tab, our H2-Console and
+            our JSON output in Chrome when running a GET request for the whole
+            inventory
+          </li>
+        </ol>
+        <h3>Supercharging your POST requests with AI</h3>
+        <p>
+          As a small aside, two items are easy to write by hand, but to create a
+          lot of them, you can prompt your AI pal of choice to generate lots of
+          your own HTTP requests to have a larger dataset to work with.
+        </p>
+        <h3>PUT request: update an item in the database</h3>
+        <p>
+          Following on with our CRUD methods, our next task is to be able to
+          update our repo. This is traditionally done by sending a PUT request,
+          and much of the logic it will be identical to our POST request. You
+          may find some of the logic is so similar you can re-factor your code
+          to reduce code duplication later on.
+        </p>
+        <p>
+          Updating an item has one key difference from adding items: we need to
+          change an existing Item/ShopSection using its unique ID and
+          <i>not</i> create a new one.
+        </p>
+        <h4>1. Create a DTO which includes the Item ID</h4>
+        <p>
+          Since our PUT request includes an ID, but our existing DTO does not
+          have a field for the ID we will make a second (almost identical) DTO
+          called <span class="codeTerm">UpdatedItemDTO</span> in the same
+          "transfer" folder. Here is its code (remember to add the setters and
+          getters at the end too):
+        </p>
+        <img
+          src="images/updatedItemDTOCode.jpeg"
+          alt="new Item DTO code"
+          class="contentImage"
+        />
+        <h4>2. Create the logic in the Service layer</h4>
+        <p>
+          We want the Server to manage the ShopSections automatically, so that
+          whenever the user changes anything in the ShopItems repository, the
+          Sections update themselves automatically. To do this, copy the
+          following code into your Service. We will fix the missing method in
+          red shortly:
+        </p>
+        <img
+          src="images/updateItemCodeServiceLayer.jpeg"
+          class="contentImage"
+          alt="Code for Update Image method in Service layer"
+        />
+        <p>Make sure you're happy with how the code is ordered. We are:</p>
+        <ol>
+          <li>Finding the original Item</li>
+          <li>Finding its original Shop Section</li>
+          <li>Adding a new Shop Section if it's not already present</li>
+          <li>
+            Transferring all the data from the DTO to the original shop item
+            (except the ID)
+          </li>
+          <li>Saving the updated Item</li>
+          <li>
+            Removing any sections that are no longer referenced by the Items
+            Table
+          </li>
+        </ol>
+        <h4>
+          3. Adding the Shop Section method to remove unused Shop Sections
+        </h4>
+        <p>Add the following private method to your Service Layer:</p>
+        <img
+          src="images/ifUnusedSectionCodeServiceLayer.jpeg"
+          alt="code for checking if a Shop Section is not in use in Service layer"
+          class="contentImageSmaller"
+        />
+        <p>
+          Lastly as we have done before, to fix the red error we just need to
+          tell the Shop Items repository layer that we have this new method for
+          getting all Items by Section so that Spring Boot can do its magic:
+        </p>
+        <img
+          src="images/ifUnusedSectionCodeRepoLayer.jpeg"
+          alt="Shop Item Repository method for finding Items by Section name"
+          class="contentImageSmaller"
+        />
+        <h4>4. Adding the Controller method</h4>
+        <p>
+          As before, the complicated bit is done in the Service Layer. Now we
+          just add the Controller method:
+        </p>
+        <img
+          src="images/updateMethodControllerLayer.jpeg"
+          alt="Update Method in Controller code"
+          class="contentImageSmaller"
+        />
+        <p>
+          Let's re-run the application, perform the same two POST methods as
+          before, and then run the following two PUT methods to change the Task
+          Section from "Sweets" to "Confectionary". If you follow the changes in
+          the H2-Console each time, you should see an extra Shop-Section get
+          added, and then once the original "Sweets" section is no longer in
+          use, it will be deleted using our Service Layer logic.
+        </p>
+        <img
+          src="images/twoPOSTsAndPUTsRequests.jpeg"
+          alt="Two POST and PUT requests"
+          class="contentImageSmaller"
+        />
+        <h3>Delete an Item</h3>
+        <p>
+          Overall, the logic for handling a DELETE request will repeat many of
+          the previous stages so let's quickly bash them out!
+        </p>
+        <h4>1. Create the method in the Service Layer</h4>
+        <img
+          src="images/deleteItemServiceLayer.jpeg"
+          alt="Delete Item method in Service Layer"
+          class="contentImageSmaller"
+        />
+        <h4>2. Add the method to the Controller Layer</h4>
+        <img
+          src="images/deleteItemControllerLayer.jpeg"
+          alt="Delete Item method in Controller Layer"
+          class="contentImageSmaller"
+        />
+        <p>
+          Note we didn't have to add any methods to the Repositories since the
+          basic "delete" method is common across all databases and relies solely
+          on an ID (not something unique to our Project).
+        </p>
+        <p>
+          Remember to test it works as expected. Here is the sample HTTP
+          request:
+        </p>
+        <img
+          src="images/deleteItemByIdRequest.jpeg"
+          alt="HTTP request for deleting an item"
+          class="contentImageSmaller"
+        />
+        <p>
+          So, we've done the four basic processes in CRUD! We could now add some
+          filters when GET requests are submitted before moving on the Front
+          End...
+        </p>
+        <p><i>TBC</i></p>
+      </main>
+    </div>
+  </body>
+</html>
